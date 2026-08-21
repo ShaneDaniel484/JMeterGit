@@ -2,6 +2,8 @@ name: JMeter Performance Test
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
   jmeter-test:
@@ -9,20 +11,24 @@ jobs:
 
     steps:
 
+      # 1. Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Setup Java 21
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
+      # 3. Download JMeter
       - name: Download JMeter
         run: |
           wget https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz
           tar -xzf apache-jmeter-5.6.3.tgz
 
+      # 4. Run JMeter
       - name: Run JMeter
         run: |
           mkdir -p results
@@ -35,6 +41,13 @@ jobs:
             -e \
             -o reports/jmeter-report
 
+      # 5. Zip the JMeter HTML report
+      - name: Zip JMeter HTML Report
+        run: |
+          cd reports
+          zip -r jmeter-report.zip jmeter-report
+
+      # 6. Upload JMeter results to GitHub
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
         with:
@@ -42,3 +55,59 @@ jobs:
           path: |
             results/results.jtl
             reports/jmeter-report/
+            reports/jmeter-report.zip
+
+      # 7. Send JMeter report by email
+      - name: Send JMeter Report via Email
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+
+          # Gmail credentials stored in GitHub Secrets
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+
+          # Sender
+          from: GitHub Actions <${{ secrets.MAIL_USERNAME }}>
+
+          # Recipients stored in GitHub Secrets
+          to: ${{ secrets.MAIL_TO }}
+
+          # Email subject
+          subject: "JMeter Performance Test Report - ${{ github.repository }}"
+
+          # Email body
+          body: |
+            Hi,
+
+            The JMeter performance test has completed successfully.
+
+            Repository:
+            ${{ github.repository }}
+
+            Branch:
+            ${{ github.ref_name }}
+
+            Commit:
+            ${{ github.sha }}
+
+            GitHub Actions Run:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            The following JMeter reports are attached:
+
+            1. results.jtl
+               - Raw JMeter test results
+
+            2. jmeter-report.zip
+               - Complete JMeter HTML Dashboard
+
+            Regards,
+            GitHub Actions
+
+          # Attachments
+          attachments: |
+            results/results.jtl
+            reports/jmeter-report.zip
