@@ -1,0 +1,31 @@
+name: JMeter Performance Test
+
+on:
+  push:
+
+jobs:
+  jmeter-test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Download JMeter
+        run: |
+          wget https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz
+          tar -xzf apache-jmeter-5.6.3.tgz
+
+      - name: Run JMeter
+        run: |
+          ./apache-jmeter-5.6.3/bin/jmeter \
+            -n \
+            -t jmeter/Git.jmx \
+            -l results.jtl
