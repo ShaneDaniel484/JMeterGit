@@ -25,7 +25,20 @@ jobs:
 
       - name: Run JMeter
         run: |
+          mkdir -p results
+          mkdir -p reports
+
           ./apache-jmeter-5.6.3/bin/jmeter \
             -n \
             -t jmeter/Git.jmx \
-            -l results.jtl
+            -l results/results.jtl \
+            -e \
+            -o reports/jmeter-report
+
+      - name: Upload JMeter Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-performance-report
+          path: |
+            results/results.jtl
+            reports/jmeter-report/
